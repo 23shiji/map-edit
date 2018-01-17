@@ -33,8 +33,32 @@
         label(for="username_input") 尊姓大名
       .input-field.col.s6
         | 其他作者:
-        span(v-for="a in authors")
+        .chip(v-for="a in authors")
           | {{a}}
+    .row
+      .col.s3
+        input#wp_cb(v-model="with_pos", type="checkbox", @click="with_pos = !with_pos")
+        label(for="wp_cb") 添加坐标信息
+      template(v-if="with_pos")
+        span.col.s6.grey-text 精度为正东负西、纬度为正北负南
+        a.col.s3.btn(target="_blank", :href="`https://23shiji.github.io/yining-map/#${pos_lat},${pos_lng},2`") 在地图中查看
+    template(v-if="with_pos")
+      .row
+        .col.s3.input-field
+          input#lat_val(v-model="pos_lat", type="number", min="-90", max="90")
+          label(for="lat_val") 纬度
+        .col.s2.input-field
+          span(v-if="pos_lat == 0") 赤道
+          span(v-if="pos_lat < 0") 南半球
+          span(v-if="pos_lat > 0") 北半球
+        .col.s3.input-field
+          input#lng_val(v-model="pos_lng", type="number", min="-180", max="180")
+          label(for="lng_val") 经度
+        .col.s2.input-field
+          span(v-if="pos_lng == 0") 本初子午线
+          span(v-if="pos_lng < 0") 西半球
+          span(v-if="pos_lng > 0") 东半球
+        button.btn.blue.col.s2(@click="paste_pos") 粘贴坐标
     .row
       button.col.s2.btn(@click="save_file") 导出
       span.col.s2 Ver {{version.toFixed(1)}}
@@ -81,7 +105,10 @@ export default {
       // tags: [],
       title:    '',
       markdown: '',
-      autosave_time: null
+      with_pos: true,
+      autosave_time: null,
+      pos_lng: 0,
+      pos_lat: 0,
     }
   },
   methods: {
@@ -100,24 +127,35 @@ export default {
           authors,
           version,
           type,
+          pos
           // tags
         } = meta
         const v_authors = Array.isArray(authors)
         // const v_tags = Array.isArray(tags)
         const v_version = typeof(version) === "number" && version >= 0
         const v_type = ALL_TYPES.includes(type)
+        const v_pos  = !pos || ( typeof(pos.lng) === "number" && typeof(pos.lat) === "number" )
         if(
             !v_md || 
             !v_authors || 
             // !v_tags || 
             !v_version 
-            || !v_type){
+            || !v_type || !v_pos){
           alert("非法文件格式")
+          console.error(meta)
+          console.error({v_md, v_authors, v_version, v_pos})
           return
         }
         this.title =    title
         this.authors =  authors
         this.version =  version + 1
+        if(pos){
+          this.with_pos = true
+          this.pos_lat = pos.lat
+          this.pos_lng = pos.lng
+        }else{
+          this.with_pos = false
+        }
         // this.loctype =     type
         $("#loctype_select").val(type)
         // this.tags =     tags
@@ -155,7 +193,8 @@ export default {
         title: this.title,
         authors,
         type,
-        version: this.version
+        version: this.version,
+        pos: this.with_pos ? {lat: parseFloat(this.pos_lat), lng: parseFloat(this.pos_lng)} : null
       }
       const date = new Date
       const text = this.preproc(this.markdown)
@@ -186,6 +225,26 @@ export default {
     save_now(){
       localStorage['yipolis.map.editor.backup'] = this.markdown
       this.autosave_time = new Date
+    },
+    paste_pos(){
+      let s = prompt("在此处输入坐标")
+      if(!s) return
+      let res = s.match(/(\d+\.?\d*)[^\dNS]*([NS]?)[^WESN\d]*(\d+\.?\d*)[^\dWE]*([WE]?)/)
+      if(!res){
+        alert("不是有效的坐标信息")
+        return
+      }
+      let [_, lat_val, lat_sp, lng_val, lng_sp] = res
+      lat_val = parseFloat(lat_val)
+      lng_val = parseFloat(lng_val)
+      if(lat_sp == "N") lat_val = lat_val
+      else if(lat_sp == "S") lat_val = -lat_val
+      else lat_val = 0
+      if(lng_sp == "E") lng_val = lng_val
+      else if(lng_sp == "W") lng_val = -lng_val
+      else lng_val = 0
+      this.pos_lat = lat_val
+      this.pos_lng = lng_val
     }
   },
   mounted(){
