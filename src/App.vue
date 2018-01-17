@@ -67,19 +67,8 @@
           | 已保存于 {{format_date(autosave_time)}}
         span(v-else)
           | 尚未保存
-      button.col.s2.btn.blue(@click="add_title") 添加段落标题
-      button.col.s2.btn.blue(@click="add_link") 添加链接
     .row
-      .col.s12
-        ul.tabs
-          li.tab.col.s6
-            a.active(href="#tab_edit") 编辑
-          li.tab.col.s6
-            a(href="#tab_preview") 预览
-        .input-field#tab_edit
-          textarea#md-text.materialize-textarea(v-model="markdown")
-          label(for="md-text") 输入文字
-        div#tab_preview(v-html="markdown_preview(markdown)")
+      mavon-editor.col.s12(v-model="markdown")
 </template>
 
 <script>
