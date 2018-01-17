@@ -40,7 +40,7 @@
         input#wp_cb(v-model="with_pos", type="checkbox", @click="with_pos = !with_pos")
         label(for="wp_cb") 添加坐标信息
       template(v-if="with_pos")
-        span.col.s6.grey-text 精度为正东负西、纬度为正北负南
+        span.col.s6.grey-text 经度度为正东负西、纬度为正北负南
         a.col.s3.btn(target="_blank", :href="`https://23shiji.github.io/yining-map/#${pos_lat},${pos_lng},2`") 在地图中查看
     template(v-if="with_pos")
       .row
