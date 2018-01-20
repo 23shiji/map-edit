@@ -16,25 +16,25 @@
       button.col.s4.btn(@click="from_exists_doc = true") 从现有文件开始编辑
     .row
       .input-field.col.s8
-        input#title_input(v-model="title", type="text")
-        label(for="title_input") 地点名称
-      .input-field.col.s4
+        input#title_input(v-model="title", type="text", :disabled="from_exists_doc")
+        label(for="title_input", v-if="!from_exists_doc") 地点名称
+      .input-field.col.s4(v-if="from_exists_doc")
+        input#fake_type_input(disabled, type="text", :value="loc_type_info[loctype].name")
+      .input-field.col.s4(v-show="!from_exists_doc")
         select#loctype_select
-          option(value="unknown") 未知地点(请勿选择)
-          option(value="pub")     公共场所
-          option(value="gov")     政府机构
-          option(value="party")   政党财产
-          option(value="com")     商业地产
-          option(value="pri")     个人房屋(请勿宣告所有权)
+          template(v-for="t in types_list")
+            option(:value="t.type") {{t.name}}
         label 地点类别
+    .row.grey-text(v-if="loctype != 'unknown'")
+      .col.s12 {{loc_type_info[loctype].name}}: {{loc_type_info[loctype].desc}}
     .row
-      .input-field.col.s6
-        input#username_input(v-model="username", type="text")
+      .input-field.col(:class="{s6: from_exists_doc, s12: !from_exists_doc}")
+        input#username_input(v-model="username", type="text", @input = "change_username")
         label(for="username_input") 尊姓大名
-      .input-field.col.s6
+      .input-field.col.s6(v-if="from_exists_doc")
         | 其他作者:
-        .chip(v-for="a in authors")
-          | {{a}}
+        template(v-for="a in authors")
+          .chip(@click="username = a") {{a}}
     .row
       .col.s3
         input#wp_cb(v-model="with_pos", type="checkbox", @click="with_pos = !with_pos")
@@ -75,14 +75,12 @@
 import FileSaver from 'file-saver'
 import YAML from 'js-yaml'
 import marked from 'marked'
-const ALL_TYPES = [
-  'unknown',
-  'pub',
-  'gov',
-  'party',
-  'com',
-  'pri',
-]
+import types_list from '../types.yaml'
+import planets_list from '../planets.yaml'
+let loc_type_info = {}
+for(let t of types_list){
+  loc_type_info[t.type] = t
+}
 export default {
   data(){
     return {
@@ -98,6 +96,10 @@ export default {
       autosave_time: null,
       pos_lng: 0,
       pos_lat: 0,
+      planet: 'yipolis',
+      types_list,
+      planets_list,
+      loc_type_info
     }
   },
   methods: {
@@ -116,25 +118,30 @@ export default {
           authors,
           version,
           type,
-          pos
+          pos,
+          planet
           // tags
         } = meta
         const v_authors = Array.isArray(authors)
         // const v_tags = Array.isArray(tags)
         const v_version = typeof(version) === "number" && version >= 0
-        const v_type = ALL_TYPES.includes(type)
+        const v_type = types_list.some(t => t.type === type)
         const v_pos  = !pos || ( typeof(pos.lng) === "number" && typeof(pos.lat) === "number" )
+        const v_planet = planets_list.some(p => p.planet === planet)
         if(
             !v_md || 
             !v_authors || 
             // !v_tags || 
             !v_version 
-            || !v_type || !v_pos){
+            || !v_type 
+            || !v_pos
+            || !v_planet){
           alert("非法文件格式")
           console.error(meta)
-          console.error({v_md, v_authors, v_version, v_pos})
+          console.error({v_md, v_authors, v_version, v_pos, v_planet})
           return
         }
+        this.planet = planet
         this.title =    title
         this.authors =  authors
         this.version =  version + 1
@@ -145,15 +152,17 @@ export default {
         }else{
           this.with_pos = false
         }
-        // this.loctype =     type
-        $("#loctype_select").val(type)
+        this.loctype =     type
         // this.tags =     tags
         this.markdown = markdown
       }
       reader.readAsText(file)
     },
+    change_username(){
+      localStorage['yipolis.map.editor.username'] = this.username
+    },
     save_file(){
-      let type = $("#loctype_select").val()
+      let type = this.loctype
       if(!this.username){
         alert("您还没填写名字")
         return
@@ -170,7 +179,6 @@ export default {
         alert("不可以生成空文件")
         return
       }
-      console.log(type)
       let authors = []
       for(let a of this.authors){
         if(a != this.username){
@@ -182,7 +190,8 @@ export default {
         title: this.title,
         authors,
         type,
-        version: this.version,
+        version:  this.version,
+        planet:   this.planet,
         pos: this.with_pos ? {lat: parseFloat(this.pos_lat), lng: parseFloat(this.pos_lng)} : null
       }
       const date = new Date
@@ -234,13 +243,20 @@ export default {
       else lng_val = 0
       this.pos_lat = lat_val
       this.pos_lng = lng_val
+    },
+    change_type(type){
+      this.loctype  = type
     }
   },
   mounted(){
-    $(document).ready(function() {
+    $(document).ready(() => {
       $('select').material_select();
       $('ul.tabs').tabs('select_tab', 'tab_edit');
     
+      $("#loctype_select").on('change', evt => {
+        this.change_type(evt.target.value)
+      })
+
       $("#loctype_select").val('unknown')
     });
   },
@@ -250,6 +266,7 @@ export default {
     } else {
       alert('您的浏览器无法支持文件上传功能')
     }
+    this.username = localStorage['yipolis.map.editor.username']
     this.markdown = localStorage['yipolis.map.editor.backup'] || ''
     setInterval(() => {
       if(this.markdown){
