@@ -68,7 +68,7 @@
         span(v-else)
           | 尚未保存
     .row
-      mavon-editor.col.s12(v-model="markdown")
+      mavon-editor#editor.col.s12(v-model="markdown")
 </template>
 
 <script>
@@ -293,5 +293,8 @@ export default {
 }
 #tab_edit{
   min-height: 40rem;
+}
+#editor{
+  z-index: 10;
 }
 </style>
