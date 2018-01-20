@@ -41,7 +41,7 @@
         label(for="wp_cb") 添加坐标信息
       template(v-if="with_pos")
         span.col.s6.grey-text 经度为正东负西、纬度为正北负南
-        a.col.s3.btn(target="_blank", :href="`https://23shiji.github.io/yining-map/#${pos_lat},${pos_lng},2`") 在地图中查看
+        a.col.s3.btn(target="_blank", :href="`${planet_info[planet].url}#${pos_lat},${pos_lng},2`") 在地图中查看
     template(v-if="with_pos")
       .row
         .col.s3.input-field
@@ -81,6 +81,10 @@ let loc_type_info = {}
 for(let t of types_list){
   loc_type_info[t.type] = t
 }
+let planet_info = {}
+for(let p of planets_list){
+  planet_info[p.planet] = p
+}
 export default {
   data(){
     return {
@@ -99,7 +103,8 @@ export default {
       planet: 'yipolis',
       types_list,
       planets_list,
-      loc_type_info
+      loc_type_info,
+      planet_info
     }
   },
   methods: {
