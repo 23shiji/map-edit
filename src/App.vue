@@ -72,11 +72,11 @@
 </template>
 
 <script>
-import FileSaver from 'file-saver'
-import YAML from 'js-yaml'
-import marked from 'marked'
 import types_list from '../types.yaml'
 import planets_list from '../planets.yaml'
+import save_file from './helpers/save_file'
+import upload_file from './helpers/upload_file'
+import paste_pos from './helpers/paste_pos'
 let loc_type_info = {}
 for(let t of types_list){
   loc_type_info[t.type] = t
@@ -108,109 +108,16 @@ export default {
     }
   },
   methods: {
-    upload_file(evt){
-      if(evt.target.files.length == 0){
-        return
-      }
-      const file = evt.target.files[0]
-      const reader = new FileReader()
-      reader.onload = (evt) => {
-        const result = evt.target.result
-        const [meta, markdown] = YAML.safeLoadAll(result)
-        const v_md = typeof(markdown) === "string"
-        const {
-          title,
-          authors,
-          version,
-          type,
-          pos,
-          planet
-          // tags
-        } = meta
-        const v_authors = Array.isArray(authors)
-        // const v_tags = Array.isArray(tags)
-        const v_version = typeof(version) === "number" && version >= 0
-        const v_type = types_list.some(t => t.type === type)
-        const v_pos  = !pos || ( typeof(pos.lng) === "number" && typeof(pos.lat) === "number" )
-        const v_planet = planets_list.some(p => p.planet === planet)
-        if(
-            !v_md || 
-            !v_authors || 
-            // !v_tags || 
-            !v_version 
-            || !v_type 
-            || !v_pos
-            || !v_planet){
-          alert("非法文件格式")
-          console.error(meta)
-          console.error({v_md, v_authors, v_version, v_pos, v_planet})
-          return
-        }
-        this.planet = planet
-        this.title =    title
-        this.authors =  authors
-        this.version =  version + 1
-        if(pos){
-          this.with_pos = true
-          this.pos_lat = pos.lat
-          this.pos_lng = pos.lng
-        }else{
-          this.with_pos = false
-        }
-        this.loctype =     type
-        // this.tags =     tags
-        this.markdown = markdown
-      }
-      reader.readAsText(file)
-    },
+    // splited files
+    save_file,
+    upload_file,
+    paste_pos,
+
     change_username(){
       localStorage['yipolis.map.editor.username'] = this.username
     },
-    save_file(){
-      let type = this.loctype
-      if(!this.username){
-        alert("您还没填写名字")
-        return
-      }
-      if(!this.title){
-        alert("您还没填写地点名")
-        return
-      }
-      if(type === 'unknown'){
-        alert("不可以生成未知类型的地点")
-        return
-      }
-      if(!this.markdown){
-        alert("不可以生成空文件")
-        return
-      }
-      let authors = []
-      for(let a of this.authors){
-        if(a != this.username){
-          authors.push(a)
-        }
-      }
-      authors.push(this.username)
-      const meta = {
-        title: this.title,
-        authors,
-        type,
-        version:  this.version,
-        planet:   this.planet,
-        pos: this.with_pos ? {lat: parseFloat(this.pos_lat), lng: parseFloat(this.pos_lng)} : null
-      }
-      const date = new Date
-      const text = this.preproc(this.markdown)
-      const content = "---\n" + YAML.safeDump(meta) + "---\n" + YAML.safeDump(text)
-      const filename = `${this.username}_${this.title}_v${this.version}.ymd`
-      const blob = new Blob([content], {type: "text/plain;charset=utf-8"});
-      FileSaver.saveAs(blob, filename);
-    },
     preproc(text){
       return text.split(/\n+/).join("\n\n")
-    },
-    markdown_preview(text){
-      return marked(this.preproc(text))
     },
     add_title(){
       this.markdown += "\n\n## 在此处添加段落标题\n"
@@ -228,26 +135,6 @@ export default {
     save_now(){
       localStorage['yipolis.map.editor.backup'] = this.markdown
       this.autosave_time = new Date
-    },
-    paste_pos(){
-      let s = prompt("在此处输入坐标")
-      if(!s) return
-      let res = s.match(/(\d+\.?\d*)[^\dNS]*([NS]?)[^WESN\d]*(\d+\.?\d*)[^\dWE]*([WE]?)/)
-      if(!res){
-        alert("不是有效的坐标信息")
-        return
-      }
-      let [_, lat_val, lat_sp, lng_val, lng_sp] = res
-      lat_val = parseFloat(lat_val)
-      lng_val = parseFloat(lng_val)
-      if(lat_sp == "N") lat_val = lat_val
-      else if(lat_sp == "S") lat_val = -lat_val
-      else lat_val = 0
-      if(lng_sp == "E") lng_val = lng_val
-      else if(lng_sp == "W") lng_val = -lng_val
-      else lng_val = 0
-      this.pos_lat = lat_val
-      this.pos_lng = lng_val
     },
     change_type(type){
       this.loctype  = type
