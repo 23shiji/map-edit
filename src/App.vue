@@ -25,7 +25,7 @@
           template(v-for="t in planets_list")
             option(:value="t.planet") {{t.name}}
         label 星球
-    .row.grey-text
+    .row
       .input-field.col.s5(v-if="from_exists_doc")
         input#fake_type_input(disabled, type="text", :value="loc_type_info[loctype].name")
       .input-field.col.s5(v-show="!from_exists_doc")
@@ -33,7 +33,7 @@
           template(v-for="t in types_list")
             option(:value="t.type") {{t.name}}
         label 地点类别
-      .col.s7(v-if="loctype != 'unknown'") {{loc_type_info[loctype].name}}: {{loc_type_info[loctype].desc}}
+      .col.s7.grey-text(v-if="loctype != 'unknown'") {{loc_type_info[loctype].name}}: {{loc_type_info[loctype].desc}}
     .row
       .input-field.col(:class="{s6: from_exists_doc, s12: !from_exists_doc}")
         input#username_input(v-model="username", type="text", @input = "change_username")
