@@ -19,14 +19,21 @@
         input#title_input(v-model="title", type="text", :disabled="from_exists_doc")
         label(for="title_input", v-if="!from_exists_doc") 地点名称
       .input-field.col.s4(v-if="from_exists_doc")
-        input#fake_type_input(disabled, type="text", :value="loc_type_info[loctype].name")
+        input#fake_type_input(disabled, type="text", :value="planet_info[planet].name")
       .input-field.col.s4(v-show="!from_exists_doc")
+        select#planet_select
+          template(v-for="t in planets_list")
+            option(:value="t.planet") {{t.name}}
+        label 星球
+    .row.grey-text
+      .input-field.col.s5(v-if="from_exists_doc")
+        input#fake_type_input(disabled, type="text", :value="loc_type_info[loctype].name")
+      .input-field.col.s5(v-show="!from_exists_doc")
         select#loctype_select
           template(v-for="t in types_list")
             option(:value="t.type") {{t.name}}
         label 地点类别
-    .row.grey-text(v-if="loctype != 'unknown'")
-      .col.s12 {{loc_type_info[loctype].name}}: {{loc_type_info[loctype].desc}}
+      .col.s7(v-if="loctype != 'unknown'") {{loc_type_info[loctype].name}}: {{loc_type_info[loctype].desc}}
     .row
       .input-field.col(:class="{s6: from_exists_doc, s12: !from_exists_doc}")
         input#username_input(v-model="username", type="text", @input = "change_username")
@@ -138,6 +145,9 @@ export default {
     },
     change_type(type){
       this.loctype  = type
+    },
+    change_planet(planet){
+      this.planet = planet
     }
   },
   mounted(){
@@ -148,8 +158,12 @@ export default {
       $("#loctype_select").on('change', evt => {
         this.change_type(evt.target.value)
       })
+      $("#planet_select").on('change', evt => {
+        this.change_planet(evt.target.value)
+      })
 
       $("#loctype_select").val('unknown')
+      $("#planet_select").val('yipolis')
     });
   },
   created(){

@@ -52,6 +52,7 @@ export default function(evt){
       this.with_pos = false
     }
     this.loctype =     type
+    this.planet  =     planet
     // this.tags =     tags
     this.markdown = markdown
   }

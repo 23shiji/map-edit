@@ -37,7 +37,7 @@ export default function(){
   const date = new Date
   const text = this.preproc(this.markdown)
   const content = "---\n" + YAML.safeDump(meta) + "---\n" + YAML.safeDump(text)
-  const filename = `${this.username}_${this.title}_v${this.version}.ymd`
+  const filename = `${this.username}_${this.title}_${this.planet}_v${this.version}.ymd`
   const blob = new Blob([content], {type: "text/plain;charset=utf-8"});
   FileSaver.saveAs(blob, filename);
 }
